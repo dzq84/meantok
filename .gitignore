@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+env/
+.eggs/
+*.egg-info/
+
+# PyTorch / Lightning
+*.ckpt
+*.pt
+*.pth
+lightning_logs/
+checkpoints/
+wandb/
+runs/
+tb_logs/
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+*.swp

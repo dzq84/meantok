@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>One-Step Token-to-Waveform Generation with MeanFlow in Latent Space</title>
+    <style>
+        :root {
+            --bg: #f8f9fa;
+            --card: #ffffff;
+            --text: #1a1a2e;
+            --accent: #2563eb;
+            --accent-bg: #eff6ff;
+            --border: #dee2e6;
+            --gray: #6c757d;
+            --green: #059669;
+            --green-bg: #ecfdf5;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+            background: var(--bg); color: var(--text);
+            line-height: 1.65; max-width: 1200px; margin: 0 auto; padding: 2.5rem 2rem;
+        }
+        header { text-align: center; margin-bottom: 2.5rem; }
+        h1 { font-size: 1.75rem; font-weight: 700; margin-bottom: 0.4rem; letter-spacing: -0.02em; }
+        .subtitle { color: var(--gray); font-size: 0.92rem; }
+        h2 {
+            font-size: 1.2rem; font-weight: 700; margin: 2.5rem 0 0.6rem;
+            padding-bottom: 0.35rem; border-bottom: 2.5px solid var(--accent);
+            color: var(--accent);
+        }
+        p { margin-bottom: 0.7rem; font-size: 0.92rem; }
+
+        .abstract {
+            background: var(--accent-bg); border-left: 4px solid var(--accent);
+            padding: 1rem 1.2rem; border-radius: 0 6px 6px 0;
+            margin-bottom: 2rem; font-size: 0.9rem;
+        }
+
+        /* Metric tables */
+        .metric-table {
+            width: 100%; border-collapse: collapse; margin: 0.8rem 0 1.5rem;
+            font-size: 0.85rem; background: var(--card); border-radius: 6px; overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+        }
+        .metric-table th {
+            background: var(--accent); color: #fff; font-weight: 600;
+            padding: 0.55rem 0.7rem; text-align: center; white-space: nowrap;
+        }
+        .metric-table td {
+            padding: 0.45rem 0.7rem; text-align: center; border-bottom: 1px solid var(--border);
+        }
+        .metric-table td:first-child { text-align: left; font-weight: 500; }
+        .metric-table tr:last-child td { border-bottom: none; }
+        .metric-table .best { font-weight: 700; color: var(--accent); }
+        .metric-table .highlight-row { background: var(--green-bg); }
+
+        /* Audio comparison table */
+        .audio-table-wrap {
+            overflow-x: auto; margin: 1rem 0 2rem;
+            background: var(--card); border-radius: 8px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+        }
+        .audio-table {
+            width: 100%; border-collapse: collapse; min-width: 900px;
+        }
+        .audio-table th {
+            background: #f1f3f5; color: var(--text); font-weight: 600;
+            padding: 0.6rem 0.5rem; text-align: center; border-bottom: 2px solid var(--border);
+            font-size: 0.82rem; white-space: nowrap; position: sticky; top: 0;
+        }
+        .audio-table th:first-child { text-align: left; padding-left: 1rem; min-width: 80px; }
+        .audio-table td {
+            padding: 0.4rem 0.3rem; text-align: center;
+            border-bottom: 1px solid #f0f0f0; vertical-align: middle;
+        }
+        .audio-table td:first-child {
+            text-align: left; padding-left: 1rem; font-weight: 600;
+            font-size: 0.88rem; color: var(--gray); white-space: nowrap;
+        }
+        .audio-table tr:nth-child(even) { background: #fafbfc; }
+        .audio-table tr:hover { background: #f0f4ff; }
+        .audio-table audio { width: 150px; height: 30px; vertical-align: middle; }
+        .audio-table .mel-thumb {
+            display: block; width: 150px; height: auto;
+            margin: 0 auto 2px; border-radius: 3px;
+            border: 1px solid #e0e0e0;
+        }
+        .audio-cell { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+
+        /* Column header badges */
+        .col-badge {
+            display: inline-block; font-size: 0.7rem; padding: 0.1rem 0.4rem;
+            border-radius: 3px; font-weight: 700; letter-spacing: 0.02em;
+        }
+        .badge-gt { background: #d1fae5; color: #065f46; }
+        .badge-base { background: #fef3c7; color: #92400e; }
+        .badge-ours { background: #dbeafe; color: #1e40af; }
+        .col-label { display: block; font-size: 0.78rem; margin-top: 0.15rem; color: var(--gray); font-weight: 500; }
+
+        footer {
+            text-align: center; color: var(--gray); font-size: 0.8rem;
+            margin-top: 3rem; padding-top: 1rem; border-top: 1px solid var(--border);
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>One-Step Token-to-Waveform Generation with MeanFlow in Latent Space</h1>
+    <p class="subtitle">Audio Demo Page &mdash; Interspeech 2026 Submission</p>
+</header>
+
+<div class="abstract">
+    <strong>Abstract:</strong>
+    We propose a novel Token2Wav architecture that applies MeanFlow in a highly compressed latent space,
+    enabling true <strong>one-step generation</strong> with a single network evaluation.
+    Operating in the latent domain yields up to a <strong>17&times; RTF improvement</strong>
+    over multi-step baselines with negligible quality degradation.
+    We further introduce refinement strategies&mdash;decoder-only and end-to-end joint fine-tuning&mdash;to mitigate latent mismatch.
+</div>
+
+<!-- ==================== SECTION 1 ==================== -->
+<h2>Main Results &amp; Refinement Strategy Comparison</h2>
+<p>
+    Evaluation on LibriSpeech test-clean. Our best system <strong>Joint-FT (D=24, 140M)</strong> achieves
+    <strong>17&times; faster RTF</strong> (0.0046 vs 0.0775) with competitive quality.
+    Refinement progressively improves quality: No-FT &rarr; Decoder-FT &rarr; Joint-FT.
+</p>
+
+<table class="metric-table">
+    <thead>
+        <tr>
+            <th style="text-align:left">System</th>
+            <th>Dim</th><th>WER(%)&darr;</th><th>SpkSim&uarr;</th><th>UTMOS&uarr;</th><th>MOS&uarr;</th><th>RTF&darr;</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>Baseline Token2Wav (10-step)</td>
+            <td>&mdash;</td><td>3.18</td><td>0.940</td><td>3.76</td><td>4.05&plusmn;0.03</td><td>0.0775</td>
+        </tr>
+        <tr>
+            <td>VAE reconstruction (oracle)</td>
+            <td>24</td><td>2.14</td><td>0.966</td><td>3.67</td><td>4.10&plusmn;0.04</td><td>&mdash;</td>
+        </tr>
+        <tr>
+            <td>Ours: No-FT (D=24)</td>
+            <td>24</td><td>3.52</td><td>0.931</td><td>3.11</td><td>3.35&plusmn;0.03</td><td>0.0046</td>
+        </tr>
+        <tr>
+            <td>Ours: Decoder-FT (D=24)</td>
+            <td>24</td><td>3.43</td><td>0.931</td><td>3.43</td><td>3.70&plusmn;0.03</td><td>0.0046</td>
+        </tr>
+        <tr class="highlight-row">
+            <td><strong>Ours: Joint-FT (D=24)</strong></td>
+            <td>24</td>
+            <td class="best">3.41</td><td class="best">0.932</td><td class="best">3.64</td>
+            <td class="best">3.85&plusmn;0.03</td><td class="best">0.0046</td>
+        </tr>
+    </tbody>
+</table>
+
+<div class="audio-table-wrap">
+<table class="audio-table">
+    <thead>
+        <tr>
+            <th></th>
+            <th><span class="col-badge badge-base">Baseline</span><span class="col-label">CosyVoice 10-step</span></th>
+            <th><span class="col-badge badge-ours">Ours</span><span class="col-label">No-FT</span></th>
+            <th><span class="col-badge badge-ours">Ours</span><span class="col-label">Decoder-FT</span></th>
+            <th><span class="col-badge badge-ours">Ours</span><span class="col-label">Joint-FT</span></th>
+            <th><span class="col-badge badge-gt">GT</span><span class="col-label">Ground Truth</span></th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>Sample 1</td>
+            <td><div class="audio-cell"><img class="mel-thumb" src="audio/mel/baseline_10step_sample_1.png" alt="mel"><audio controls preload="none"><source src="audio/baseline_10step/sample_1.wav"></audio></div></td>
+            <td><div class="audio-cell"><img class="mel-thumb" src="audio/mel/noFT_d24_sample_1.png" alt="mel"><audio controls preload="none"><source src="audio/noFT_d24/sample_1.wav"></audio></div></td>
+            <td><div class="audio-cell"><img class="mel-thumb" src="audio/mel/decoderFT_d24_sample_1.png" alt="mel"><audio controls preload="none"><source src="audio/decoderFT_d24/sample_1.wav"></audio></div></td>
+            <td><div class="audio-cell"><img class="mel-thumb" src="audio/mel/jointFT_d24_sample_1.png" alt="mel"><audio controls preload="none"><source src="audio/jointFT_d24/sample_1.wav"></audio></div></td>
+            <td><div class="audio-cell"><img class="mel-thumb" src="audio/mel/gt_sample_1.png" alt="mel"><audio controls preload="none"><source src="audio/gt/sample_1.wav"></audio></div></td>
+        </tr>
+        <tr>
+            <td>Sample 2</td>
+            <td><div class="audio-cell"><img class="mel-thumb" src="audio/mel/baseline_10step_sample_2.png" alt="mel"><audio controls preload="none"><source src="audio/baseline_10step/sample_2.wav"></audio></div></td>
+            <td><div class="audio-cell"><img class="mel-thumb" src="audio/mel/noFT_d24_sample_2.png" alt="mel"><audio controls preload="none"><source src="audio/noFT_d24/sample_2.wav"></audio></div></td>
+            <td><div class="audio-cell"><img class="mel-thumb" src="audio/mel/decoderFT_d24_sample_2.png" alt="mel"><audio controls preload="none"><source src="audio/decoderFT_d24/sample_2.wav"></audio></div></td>
+            <td><div class="audio-cell"><img class="mel-thumb" src="audio/mel/jointFT_d24_sample_2.png" alt="mel"><audio controls preload="none"><source src="audio/jointFT_d24/sample_2.wav"></audio></div></td>
+            <td><div class="audio-cell"><img class="mel-thumb" src="audio/mel/gt_sample_2.png" alt="mel"><audio controls preload="none"><source src="audio/gt/sample_2.wav"></audio></div></td>
+        </tr>
+        <tr>
+            <td>Sample 3</td>
+            <td><div class="audio-cell"><img class="mel-thumb" src="audio/mel/baseline_10step_sample_3.png" alt="mel"><audio controls preload="none"><source src="audio/baseline_10step/sample_3.wav"></audio></div></td>
+            <td><div class="audio-cell"><img class="mel-thumb" src="audio/mel/noFT_d24_sample_3.png" alt="mel"><audio controls preload="none"><source src="audio/noFT_d24/sample_3.wav"></audio></div></td>
+            <td><div class="audio-cell"><img class="mel-thumb" src="audio/mel/decoderFT_d24_sample_3.png" alt="mel"><audio controls preload="none"><source src="audio/decoderFT_d24/sample_3.wav"></audio></div></td>
+            <td><div class="audio-cell"><img class="mel-thumb" src="audio/mel/jointFT_d24_sample_3.png" alt="mel"><audio controls preload="none"><source src="audio/jointFT_d24/sample_3.wav"></audio></div></td>
+            <td><div class="audio-cell"><img class="mel-thumb" src="audio/mel/gt_sample_3.png" alt="mel"><audio controls preload="none"><source src="audio/gt/sample_3.wav"></audio></div></td>
+        </tr>
+        <tr>
+            <td>Sample 4</td>
+            <td><div class="audio-cell"><img class="mel-thumb" src="audio/mel/baseline_10step_sample_4.png" alt="mel"><audio controls preload="none"><source src="audio/baseline_10step/sample_4.wav"></audio></div></td>
+            <td><div class="audio-cell"><img class="mel-thumb" src="audio/mel/noFT_d24_sample_4.png" alt="mel"><audio controls preload="none"><source src="audio/noFT_d24/sample_4.wav"></audio></div></td>
+            <td><div class="audio-cell"><img class="mel-thumb" src="audio/mel/decoderFT_d24_sample_4.png" alt="mel"><audio controls preload="none"><source src="audio/decoderFT_d24/sample_4.wav"></audio></div></td>
+            <td><div class="audio-cell"><img class="mel-thumb" src="audio/mel/jointFT_d24_sample_4.png" alt="mel"><audio controls preload="none"><source src="audio/jointFT_d24/sample_4.wav"></audio></div></td>
+            <td><div class="audio-cell"><img class="mel-thumb" src="audio/mel/gt_sample_4.png" alt="mel"><audio controls preload="none"><source src="audio/gt/sample_4.wav"></audio></div></td>
+        </tr>
+        <tr>
+            <td>Sample 5</td>
+            <td><div class="audio-cell"><img class="mel-thumb" src="audio/mel/baseline_10step_sample_5.png" alt="mel"><audio controls preload="none"><source src="audio/baseline_10step/sample_5.wav"></audio></div></td>
+            <td><div class="audio-cell"><img class="mel-thumb" src="audio/mel/noFT_d24_sample_5.png" alt="mel"><audio controls preload="none"><source src="audio/noFT_d24/sample_5.wav"></audio></div></td>
+            <td><div class="audio-cell"><img class="mel-thumb" src="audio/mel/decoderFT_d24_sample_5.png" alt="mel"><audio controls preload="none"><source src="audio/decoderFT_d24/sample_5.wav"></audio></div></td>
+            <td><div class="audio-cell"><img class="mel-thumb" src="audio/mel/jointFT_d24_sample_5.png" alt="mel"><audio controls preload="none"><source src="audio/jointFT_d24/sample_5.wav"></audio></div></td>
+            <td><div class="audio-cell"><img class="mel-thumb" src="audio/mel/gt_sample_5.png" alt="mel"><audio controls preload="none"><source src="audio/gt/sample_5.wav"></audio></div></td>
+        </tr>
+    </tbody>
+</table>
+</div>
+
+<!-- ==================== SECTION 2 ==================== -->
+<h2>Ablation: Latent Dimensionality</h2>
+<p>
+    Effect of latent dimension <em>D</em> on one-step generation quality (all with Joint-FT, 140M DiT).
+    Increasing <em>D</em> consistently improves all metrics; <em>D</em>=24 provides the best quality.
+</p>
+
+<div class="audio-table-wrap">
+<table class="audio-table">
+    <thead>
+        <tr>
+            <th></th>
+            <th><span class="col-badge badge-ours">D=8</span><span class="col-label">Joint-FT</span></th>
+            <th><span class="col-badge badge-ours">D=16</span><span class="col-label">Joint-FT</span></th>
+            <th><span class="col-badge badge-ours">D=24</span><span class="col-label">Joint-FT</span></th>
+            <th><span class="col-badge badge-gt">GT</span><span class="col-label">Ground Truth</span></th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>Sample 1</td>
+            <td><div class="audio-cell"><img class="mel-thumb" src="audio/mel/jointFT_d8_sample_1.png" alt="mel"><audio controls preload="none"><source src="audio/jointFT_d8/sample_1.wav"></audio></div></td>
+            <td><div class="audio-cell"><img class="mel-thumb" src="audio/mel/jointFT_d16_sample_1.png" alt="mel"><audio controls preload="none"><source src="audio/jointFT_d16/sample_1.wav"></audio></div></td>
+            <td><div class="audio-cell"><img class="mel-thumb" src="audio/mel/jointFT_d24_sample_1.png" alt="mel"><audio controls preload="none"><source src="audio/jointFT_d24/sample_1.wav"></audio></div></td>
+            <td><div class="audio-cell"><img class="mel-thumb" src="audio/mel/gt_sample_1.png" alt="mel"><audio controls preload="none"><source src="audio/gt/sample_1.wav"></audio></div></td>
+        </tr>
+        <tr>
+            <td>Sample 2</td>
+            <td><div class="audio-cell"><img class="mel-thumb" src="audio/mel/jointFT_d8_sample_2.png" alt="mel"><audio controls preload="none"><source src="audio/jointFT_d8/sample_2.wav"></audio></div></td>
+            <td><div class="audio-cell"><img class="mel-thumb" src="audio/mel/jointFT_d16_sample_2.png" alt="mel"><audio controls preload="none"><source src="audio/jointFT_d16/sample_2.wav"></audio></div></td>
+            <td><div class="audio-cell"><img class="mel-thumb" src="audio/mel/jointFT_d24_sample_2.png" alt="mel"><audio controls preload="none"><source src="audio/jointFT_d24/sample_2.wav"></audio></div></td>
+            <td><div class="audio-cell"><img class="mel-thumb" src="audio/mel/gt_sample_2.png" alt="mel"><audio controls preload="none"><source src="audio/gt/sample_2.wav"></audio></div></td>
+        </tr>
+        <tr>
+            <td>Sample 3</td>
+            <td><div class="audio-cell"><img class="mel-thumb" src="audio/mel/jointFT_d8_sample_3.png" alt="mel"><audio controls preload="none"><source src="audio/jointFT_d8/sample_3.wav"></audio></div></td>
+            <td><div class="audio-cell"><img class="mel-thumb" src="audio/mel/jointFT_d16_sample_3.png" alt="mel"><audio controls preload="none"><source src="audio/jointFT_d16/sample_3.wav"></audio></div></td>
+            <td><div class="audio-cell"><img class="mel-thumb" src="audio/mel/jointFT_d24_sample_3.png" alt="mel"><audio controls preload="none"><source src="audio/jointFT_d24/sample_3.wav"></audio></div></td>
+            <td><div class="audio-cell"><img class="mel-thumb" src="audio/mel/gt_sample_3.png" alt="mel"><audio controls preload="none"><source src="audio/gt/sample_3.wav"></audio></div></td>
+        </tr>
+        <tr>
+            <td>Sample 4</td>
+            <td><div class="audio-cell"><img class="mel-thumb" src="audio/mel/jointFT_d8_sample_4.png" alt="mel"><audio controls preload="none"><source src="audio/jointFT_d8/sample_4.wav"></audio></div></td>
+            <td><div class="audio-cell"><img class="mel-thumb" src="audio/mel/jointFT_d16_sample_4.png" alt="mel"><audio controls preload="none"><source src="audio/jointFT_d16/sample_4.wav"></audio></div></td>
+            <td><div class="audio-cell"><img class="mel-thumb" src="audio/mel/jointFT_d24_sample_4.png" alt="mel"><audio controls preload="none"><source src="audio/jointFT_d24/sample_4.wav"></audio></div></td>
+            <td><div class="audio-cell"><img class="mel-thumb" src="audio/mel/gt_sample_4.png" alt="mel"><audio controls preload="none"><source src="audio/gt/sample_4.wav"></audio></div></td>
+        </tr>
+        <tr>
+            <td>Sample 5</td>
+            <td><div class="audio-cell"><img class="mel-thumb" src="audio/mel/jointFT_d8_sample_5.png" alt="mel"><audio controls preload="none"><source src="audio/jointFT_d8/sample_5.wav"></audio></div></td>
+            <td><div class="audio-cell"><img class="mel-thumb" src="audio/mel/jointFT_d16_sample_5.png" alt="mel"><audio controls preload="none"><source src="audio/jointFT_d16/sample_5.wav"></audio></div></td>
+            <td><div class="audio-cell"><img class="mel-thumb" src="audio/mel/jointFT_d24_sample_5.png" alt="mel"><audio controls preload="none"><source src="audio/jointFT_d24/sample_5.wav"></audio></div></td>
+            <td><div class="audio-cell"><img class="mel-thumb" src="audio/mel/gt_sample_5.png" alt="mel"><audio controls preload="none"><source src="audio/gt/sample_5.wav"></audio></div></td>
+        </tr>
+    </tbody>
+</table>
+</div>
+
+<!-- ==================== SECTION 3 ==================== -->
+<h2>Ablation: Model Size</h2>
+<p>
+    Effect of DiT model size on one-step generation quality (all with Joint-FT, D=24).
+    Comparing the small (140M) and big model variants.
+</p>
+
+<div class="audio-table-wrap">
+<table class="audio-table">
+    <thead>
+        <tr>
+            <th></th>
+            <th><span class="col-badge badge-ours">140M</span><span class="col-label">Joint-FT (D=24)</span></th>
+            <th><span class="col-badge badge-ours">Big</span><span class="col-label">Joint-FT (D=24)</span></th>
+            <th><span class="col-badge badge-gt">GT</span><span class="col-label">Ground Truth</span></th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>Sample 1</td>
+            <td><div class="audio-cell"><img class="mel-thumb" src="audio/mel/jointFT_d24_sample_1.png" alt="mel"><audio controls preload="none"><source src="audio/jointFT_d24/sample_1.wav"></audio></div></td>
+            <td><div class="audio-cell"><img class="mel-thumb" src="audio/mel/jointFT_d24_big_sample_1.png" alt="mel"><audio controls preload="none"><source src="audio/jointFT_d24_big/sample_1.wav"></audio></div></td>
+            <td><div class="audio-cell"><img class="mel-thumb" src="audio/mel/gt_sample_1.png" alt="mel"><audio controls preload="none"><source src="audio/gt/sample_1.wav"></audio></div></td>
+        </tr>
+        <tr>
+            <td>Sample 2</td>
+            <td><div class="audio-cell"><img class="mel-thumb" src="audio/mel/jointFT_d24_sample_2.png" alt="mel"><audio controls preload="none"><source src="audio/jointFT_d24/sample_2.wav"></audio></div></td>
+            <td><div class="audio-cell"><img class="mel-thumb" src="audio/mel/jointFT_d24_big_sample_2.png" alt="mel"><audio controls preload="none"><source src="audio/jointFT_d24_big/sample_2.wav"></audio></div></td>
+            <td><div class="audio-cell"><img class="mel-thumb" src="audio/mel/gt_sample_2.png" alt="mel"><audio controls preload="none"><source src="audio/gt/sample_2.wav"></audio></div></td>
+        </tr>
+        <tr>
+            <td>Sample 3</td>
+            <td><div class="audio-cell"><img class="mel-thumb" src="audio/mel/jointFT_d24_sample_3.png" alt="mel"><audio controls preload="none"><source src="audio/jointFT_d24/sample_3.wav"></audio></div></td>
+            <td><div class="audio-cell"><img class="mel-thumb" src="audio/mel/jointFT_d24_big_sample_3.png" alt="mel"><audio controls preload="none"><source src="audio/jointFT_d24_big/sample_3.wav"></audio></div></td>
+            <td><div class="audio-cell"><img class="mel-thumb" src="audio/mel/gt_sample_3.png" alt="mel"><audio controls preload="none"><source src="audio/gt/sample_3.wav"></audio></div></td>
+        </tr>
+        <tr>
+            <td>Sample 4</td>
+            <td><div class="audio-cell"><img class="mel-thumb" src="audio/mel/jointFT_d24_sample_4.png" alt="mel"><audio controls preload="none"><source src="audio/jointFT_d24/sample_4.wav"></audio></div></td>
+            <td><div class="audio-cell"><img class="mel-thumb" src="audio/mel/jointFT_d24_big_sample_4.png" alt="mel"><audio controls preload="none"><source src="audio/jointFT_d24_big/sample_4.wav"></audio></div></td>
+            <td><div class="audio-cell"><img class="mel-thumb" src="audio/mel/gt_sample_4.png" alt="mel"><audio controls preload="none"><source src="audio/gt/sample_4.wav"></audio></div></td>
+        </tr>
+        <tr>
+            <td>Sample 5</td>
+            <td><div class="audio-cell"><img class="mel-thumb" src="audio/mel/jointFT_d24_sample_5.png" alt="mel"><audio controls preload="none"><source src="audio/jointFT_d24/sample_5.wav"></audio></div></td>
+            <td><div class="audio-cell"><img class="mel-thumb" src="audio/mel/jointFT_d24_big_sample_5.png" alt="mel"><audio controls preload="none"><source src="audio/jointFT_d24_big/sample_5.wav"></audio></div></td>
+            <td><div class="audio-cell"><img class="mel-thumb" src="audio/mel/gt_sample_5.png" alt="mel"><audio controls preload="none"><source src="audio/gt/sample_5.wav"></audio></div></td>
+        </tr>
+    </tbody>
+</table>
+</div>
+
+<footer>
+    <p>Interspeech 2026 Submission &mdash; Audio samples from LibriSpeech test-clean.</p>
+</footer>
+
+</body>
+</html>

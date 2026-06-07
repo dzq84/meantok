@@ -1,0 +1,36 @@
+# MeanFlow latent generator training config (24-dim, 140M)
+exp_name: "meanflow_24dim_25hz_small"
+gpu_id: "0"
+
+dataset_path: "/path/to/arrow/dataset/24-dim"
+split: "train"
+
+model:
+  input_size: 126
+  patch_size: 1
+  in_channels: 1
+  feat_dim: 24
+  depth: 12         # 140M (small): depth=12, hidden=768, heads=12
+  hidden_size: 768   # 600M (big):   depth=28, hidden=1152, heads=16
+  num_heads: 12
+  num_tokens: 6561
+  spk_dim: 192
+
+autoencoder:
+  model_config_path: "./configs/vae_24_25hz.json"
+  model_ckpt_path: "/path/to/vae_checkpoint.ckpt"
+
+training:
+  learning_rate: 0.0001
+  batch_size: 32
+  max_epochs: 10000
+  sample_every_n_steps: 2000
+  save_every_n_epochs: 10
+  num_workers: 8
+  gradient_clip_val: 1.0
+  precision: "bf16-mixed"
+  log_every_n_steps: 20
+
+checkpoint:
+  dirpath: "checkpoints/"
+  filename: "meanflow_spk-{epoch:03d}"

@@ -1,0 +1,11 @@
+{
+    "dataset_type": "audio_dir",
+    "datasets": [
+        {
+            "id": "libritts",
+            "path": "/path/to/LibriTTS/train_580h"
+        }
+    ],
+    "random_crop": true
+}
+
