@@ -68,7 +68,7 @@ class MeanFlowWrapper:
         v = e - x
 
         def model_partial(z, t, r):
-            return model.forward(z, t, c, spk=spk)
+            return model.forward(z, t, c, spk=spk, r=r)
 
         jvp_args = (model_partial, (z, t, r), (v, torch.ones_like(t), torch.zeros_like(r)))
         if self.create_graph:
@@ -82,13 +82,14 @@ class MeanFlowWrapper:
 
     @torch.no_grad()
     def sample(self, model, batch_size, c, feat_dim, spk=None, device='cuda'):
-        """One-step sampling: z_gen = z_1 - f_theta(z_1, 0, 1, c)."""
+        """One-step sampling: z_gen = z_1 - u_theta(z_1, t=1, r=0, c)."""
         model.eval()
         z = torch.randn(batch_size, self.channels, self.image_size, feat_dim, device=device)
         t = torch.full((batch_size,), 1.0, device=device)
+        r = torch.zeros_like(t)
         t_ = rearrange(t, "b -> b 1 1 1")
-        r_ = torch.zeros_like(t_)
-        v = model.forward(z, t, c, spk=spk)
+        r_ = rearrange(r, "b -> b 1 1 1")
+        v = model.forward(z, t, c, spk=spk, r=r)
         return z - (t_ - r_) * v
 
 
@@ -100,5 +101,5 @@ def differentiable_sample(model, wrapper, batch_size, c, feat_dim, spk=None, dev
     r = torch.full((batch_size,), 0.0, device=device)
     t_ = rearrange(t, "b -> b 1 1 1")
     r_ = rearrange(r, "b -> b 1 1 1")
-    v = model.forward(z, t, c, spk=spk)
+    v = model.forward(z, t, c, spk=spk, r=r)
     return z - (t_ - r_) * v

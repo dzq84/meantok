@@ -77,8 +77,8 @@ class MeanFlowTrainer(pl.LightningModule):
         self.autoencoder.load_state_dict(new_sd, strict=False)
         self.autoencoder.eval()
 
-    def forward(self, x, t, y, spk):
-        return self.model(x=x, t=t, y=y, spk=spk)
+    def forward(self, x, t, y, spk, r=None):
+        return self.model(x=x, t=t, y=y, spk=spk, r=r)
 
     def training_step(self, batch, batch_idx):
         tokens = batch['token'].squeeze(1)
