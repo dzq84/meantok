@@ -168,6 +168,7 @@ class DiT1D(nn.Module):
         self.spk_embedder = nn.Linear(spk_dim, hidden_size, bias=True)
         self.num_patches = input_size // patch_size
         self.t_embedder = TimestepEmbedder(hidden_size)
+        self.dt_embedder = TimestepEmbedder(hidden_size)
         self.y_embedder = TokenSequenceEmbedder(num_tokens, hidden_size, dropout_prob)
         self.pos_embed = nn.Parameter(torch.zeros(1, self.num_patches, hidden_size), requires_grad=False)
         self.blocks = nn.ModuleList([DiTBlock(hidden_size, num_heads, mlp_ratio) for _ in range(depth)])
@@ -191,6 +192,9 @@ class DiT1D(nn.Module):
         nn.init.normal_(self.y_embedder.embedding_table.weight, std=0.02)
         nn.init.normal_(self.t_embedder.mlp[0].weight, std=0.02)
         nn.init.normal_(self.t_embedder.mlp[2].weight, std=0.02)
+        nn.init.normal_(self.dt_embedder.mlp[0].weight, std=0.02)
+        nn.init.zeros_(self.dt_embedder.mlp[2].weight)
+        nn.init.zeros_(self.dt_embedder.mlp[2].bias)
         for block in self.blocks:
             nn.init.constant_(block.adaLN_modulation[-1].weight, 0)
             nn.init.constant_(block.adaLN_modulation[-1].bias, 0)
@@ -210,10 +214,12 @@ class DiT1D(nn.Module):
         C, D = self.out_channels, self.feat_dim
         return x.reshape(B, T, C, D).permute(0, 2, 1, 3)
 
-    def forward(self, x, t, y, spk):
+    def forward(self, x, t, y, spk, r=None):
         B = x.shape[0]
         x = self.x_embedder(self.patchify(x)) + self.pos_embed
-        t_emb = self.t_embedder(t)
+        if r is None:
+            r = torch.zeros_like(t)
+        t_emb = self.t_embedder(t) + self.dt_embedder(t - r)
         if t_emb.shape[0] == 1 and B > 1:
             t_emb = t_emb.expand(B, -1)
         y_emb = self.y_embedder(y)[:, ::self.patch_size, :]
